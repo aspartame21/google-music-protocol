@@ -67,8 +67,8 @@ message UploadAuth {
 
 message Quota {
 	optional int32 maximumTracks = 1;
-	optional int32 totalTracks = 2;
-	optional int32 availableTracks = 3;
+	optional int32 availableTracks = 2;
+	optional int32 totalTracks = 3;
 }
 
 message ClientState {

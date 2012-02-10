@@ -118,7 +118,8 @@ for filename in args:
 	if "title" in audio: track.title = audio["title"][0]
 	if "artist" in audio: track.artist = audio["artist"][0]
 	if "composer" in audio: track.composer = audio["composer"][0]
-	#if "albumartistsort" in audio: track.albumArtist = audio["albumartistsort"][0]
+	#performer == albumArtist, according to this: https://github.com/plexinc-plugins/Scanners.bundle/commit/95cc0b9eeb7fa8fa77c36ffcf0ec51644a927700
+	if "performer" in audio: track.albumArtist = audio["performer"][0]
 	if "genre" in audio: track.genre = audio["genre"][0]
 	if "date" in audio: track.year = int(audio["date"][0])
 	if "bpm" in audio: track.beatsPerMinute = int(audio["bpm"][0])
