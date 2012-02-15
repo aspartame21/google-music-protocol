@@ -1,28 +1,24 @@
-This project aims to document the protocol for uploading music files to Google Music. This project is related to the [MusicAlpha](https://github.com/antimatter15/musicalpha) project as well as [Unofficial-Google-Music-API](https://github.com/simon-weber/Unofficial-Google-Music-API). Since there is no official documentation, much of the process involves guesswork, but the process is largely functional. In the `py` directory, which you can find in this git repository, there is a simple python implementation of this protocol, capable of uploading songs via the command line.
+This project aims to document the protocol for uploading music files to Google Music. This project is related to the [MusicAlpha](https://github.com/antimatter15/musicalpha) project as well as the [Unofficial-Google-Music-API](https://github.com/simon-weber/Unofficial-Google-Music-API). Since there is no official documentation, much of the process involves guesswork, but the process is largely functional.
 
-![Evidence that this works](http://dl.dropbox.com/u/1024307/Screenshots/MusicAlpha%20Redux.png)
 
 ##Overview
 
-Here, I'd like to give an overview of how the process works without all the technical implementation details, and also present some of the more up-to-date information, since some of the rest of this file is quite dated and reflects older content. Note that many of these stages are mere guesses based on behavior and contracted names.
+First is the process of logging in. This login process is surprisingly simple and involves a simple HTTPS POST request, and the response is just as simple: cookie values separated by newlines. This must be conducted over HTTPS, or else the response simply doesn't work. Also, the values seem equivalent to browser login cookies (the only one which is needed is the SID, everything else can pretty much be discarded), as in, a SID attained through the web based login is just as valid as one procured through this process. Note that an SID alone is not sufficient to authenticate to the web client, however; there is a process for upgrading the session, but it is so far undocumented.
 
-First is the process of logging in. This login process is surprisingly simple and involves a simple HTTPS POST request, and the response is just as simple: cookie values separated by newlines. This must be conducted over HTTPS, or else the response simply doesn't work. Also, the values seem equivalent to browser login cookies (the only one which is needed is the SID, everything else can pretty much be discarded), as in, a SID attained through the web based login is just as valid as one procured through this process, though unless you're making some browser extension (a la MusicAlpha), this method is probably a lot simpler (occam's razor behooves you).
+The next steps are done over SSL with Google's Protocol Buffers, a binary data format. Also, Music Manager is configured to ensure it is communicating with Google's certificates; the executable had to be patched before Fiddler could be used to intercept the communications.
 
-Clutching that mighty `SID` token, you can finally begin the galliant quest of sending your music through a series of tubes. However, the next step involves Google's Protocol Buffers, a binary data format. Previously, this served as a huge roadblock in deciphering the protocol, since the Music Manager application ignored the operating system's list of trusted root certificates and communicated exclusively through SSL. However, we found a way to patch the executable to disable certificate checking and use a mitm ssl proxy (Fiddler) to glean insights into latter stages of the process.
+The protobuff step is uploader authentication. It involves sending the NIC's MAC address and the computer's hostname to Google's servers, which in return, respond with some protobuf encoded status message consisting of indecipherable numbers. Google restricts users to "up to 10 devices" (these can be managed from the web interface in the [settings page](https://music.google.com/music/listen?u=0#settings_pl)). This is also why Google Music isn't supported on virtual machines: the NIC usually has a default MAC which someone else already registered (change your virtual NIC MAC to get around this).
 
-The first of these is uploader authentication, and at fairly straightforward at that. The process involves sending the NIC's MAC address and the computer's hostname (protobuf encoded) to Google's servers, which in return, respond with some protobuf encoded status message consisting of indecipherable numbers. This is used to register a device with Google Music, which restricts you to "up to 10 devices" which can be managed from the web interface in the [settings page](https://music.google.com/music/listen?u=0#settings_pl). 
+Once you have authenticated, you can query for things like the user's current quota status. That current quota status includes the maximum number of files of that current payment level, the total number of uploaded files and the available tracks.
 
-Once you have authenticated your Uploader ID (MAC address), you can query for things like the user's current quota status. That current quota status includes the maximum number of files of that current payment level, the total number of uploaded files and the available tracks. 
+Now the actual upload process can begin. For each song to upload, the client sends select song metadata and a hash (called the ClientId) for each file. Google checks the hash against what is already in the library, and will actively reject duplicate requests. Note that the client is trusted to calculate the correct hash - spoofing the hash will allow duplicate uploads. Accepted requests are given a ServerId to use - these are the same that identify the songs in the library later.
 
-The actual uploading process commences when you send a list of tracks that you plan on uploading with the associated ID3 metadata. The whole impetus behind this seems quite odd since it appears Google does its own parsing of ID3 data on its end as well (but chooses not to display it). It seems that Google extracts the Album Art from the file but relies on the metadata submitted through this phase for textual things (Album Artist, Title, etc.), and the files which it sends to browsers are stripped of ID3 data (Presumably, this allows them to differentiate between MP3s downloaded through the restricted (two time only) download dialog and those which are simply used for playing audio. A less sinister theory is that they might just want to save on bandwidth. 
+Tracks are initialized in bulk since there is a period of time which must be waited before proceeding to the next step. This seems to be about 3 seconds after the server has responded with ServerIds, presumably for the uploadsj and android servers to sync up.
 
-Anyway, each one of these requests contains several tracks worth of metadata. Along with metadata, there are several fields which have yet to be interpreted to any useful extent. Notably, each track is assigned a 20-character random alphanumeric string, later referenced as the ClientId. In the server's response, these ClientIds are paired with respective ServerIds, which are longer and resemble UUIDs. It's the ServerID which is used in the step which begins the actual transfer. The server's response also incorporates that mysterious status update motif.
+Once that duration has elapsed, the client opens an unencrypted HTTP channel to Google Music and POSTs some JSON, repeating some audio information (file name, bitrate), including some useless things and notably, including the ServerID. The server responds with more JSON, including the url to PUT the file at.
 
-The reason tracks are initialized in bulk, is because there's actually a period of time which must be waited before proceeding to the next step. This seems to be about 3 seconds after the server has responded with ServerIds, presumably for the uploadsj and android servers to sync up.
+After the PUT is finished, the song is uploaded.
 
-Once that duration has elapsed, the client opens an unencrypted HTTP channel to Google Music and POSTs some JSON, repeating some audio information (file name, bitrate), including some useless things and notably, including the ServerID. The server responds with more JSON, which includes a putUrl which is quite self explanatory. It's a URL, which you're supposed to send a PUT to, with the contents of that file. 
-
-At this point, you're done. 
 
 ##Authentication
 
@@ -68,7 +64,7 @@ LSID=DQAAAMMREDACTEDLLorHpA
 Auth=DQAAREDACTEDep1i-o
 ```
 
-There's also a trailing newline, if that matters. It seems that the only value which is actually carried onto the cookies is SID, the other ones seem to be extraneous.
+There's also a trailing newline, if that matters. The SID is all that is needed for uploading; the other cookies are used when bumping auth to be used with the web client.
 
 Also, omitting the GOOGLE and sj parts seems to return something without an auth token. It's not yet clear if that resultant SID is still valid.
 
@@ -115,7 +111,7 @@ The server responds with that same series of cryptic numbers denoting state as w
 8 {
   1: 20000 //maximum number of songs that can be held for your current payment plan
   2: 1696 //total number of songs you have uploaded?
-  3: 1402 //available songs (what does that mean?)
+  3: 1402 //available songs (songs able to be played by the web client?)
 }
 ```
 
@@ -126,23 +122,22 @@ As Simon Weber noted, it seems to correspond with the `/music/services/getstatus
 "totalTracks":1723
 ```
 
-The available tracks seems to be the number of tracks which is displayed in the web client.
-
 ##/upsj/metadata?version=1
 
-This is where the actual action begins.
+This step sends metadata to Google, and requests that these files be given an upload session.
 
-Here's a basic overview of what I've gleaned of this process. The client sends a list of tracks which are to be uploaded, this includes all the ID3 metadata, and importantly, a random 22 character alphanumeric temporary ID (it seems that this is called the ClientID, TODO: update existing documentation to use this new name). In response, the server returns a list which maps each of these temporary IDs, with a persistant track ID (the ServerID) which is later used to actually upload stuff and to reference files.
+The other important part of this step is the ClientId. This is a hash of the file, calculated by taking an md5 sum of the file, stripped of tags, then encoded with base64. The padding "===" from the result is discarded, leaving 22 characters. 
 
+The process of discarding tags is not yet fully understood. It seems that ID3 tags at the beginning and/or end of the file will always be removed. However, APE tags at the end of the file have been left on while hashing; this is likely just an oversight on Google's end.
 
-`cat musicman2.saz_FILES/raw/08_c.txt | python strip.py | protoc --decode=MetadataRequest metadata.proto > test_proto.txt`
+The ClientId is used to check for duplicate files in the library, but _not_ across other's libraries. Tests have shown that duplicate ClientIds are no problem across different accounts, so a semi-compliant implementation of the hash (eg not removing tags first) should work fine in practice.
 
 
 `POST` to https://android.clients.google.com/upsj/metadata?version=1 
 
 ```
 1 {
-  2: "lJE0p7HzgoeiBToyLpAoIA" #is this a random string?
+  2: "lJE0p7HzgoeiBToyLpAoIA" #ClientId
   3: 1271984386 #04 / 22 / 10 @ 7:59:46pm EST - Probably Creation Date
   4: 1272400853 #04 / 27 / 10 @ 3:40:53pm EST - Probably Last Played Date
   6: "Carl Sagan - Glorious Dawn (ft Stephen Hawking)" #Title, this is quite self explanatory
@@ -173,7 +168,7 @@ Here's a basic overview of what I've gleaned of this process. The client sends a
 ```
 
 
-This, my friends is the sound of success
+Here is a request. Note that for a duplicate ClientId, the server will send back the serverId of the duplicate file.
 
 ```
 u0: 1

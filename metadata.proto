@@ -1,17 +1,17 @@
 message Track {
-	optional string id = 2; //i dont know what this is
+	optional string id = 2; //md5sum of the file, stripped of tags and base64 encoded
 	optional int32 creation = 3; //unix timestamp seconds - only a guess
-	optional int32 lastPlayed = 4; //unix timestamp seconds - only a guess
-	optional string title = 6; //fairly certain
-	optional string artist = 7; //fairly certain
+	optional int32 lastPlayed = 4; //this is likely to be incorrect, as the server will change this on a whim
+	optional string title = 6;
+	optional string artist = 7;
 	optional string composer = 8; 
 	optional string album = 9;
 	optional string albumArtist = 10; 
 	optional int32 year = 11; 
 	optional string comment = 12;
 	optional int32 track = 13; 
-	optional string genre = 14;	//fairly certain
-	optional int32 duration = 15; //fairly certain
+	optional string genre = 14;
+	optional int32 duration = 15;
 	optional int32 beatsPerMinute = 16; 
 	optional int32 playCount = 20;
 	optional int32 totalTracks = 26; 
@@ -29,20 +29,20 @@ message Track {
 
 message MetadataRequest {
 	repeated Track tracks = 1;
-	optional string address = 2; //I don't know what this is
+	optional string address = 2; //client MAC
 }
 
 message QueuedUpload {
 	optional string id = 1;
-	optional int32 u0 = 2; //i dont know but this is always 2
-	optional string serverId = 3;  //That's what this number is referred to later as during the uploadsj/rupio
+	optional int32 u0 = 2; //usually 2 - seems to change when attempting to upload duplicate files
+	optional string serverId = 3;
 }
 
 message Status {
 	optional int32 u0 = 1;
 	optional int32 u1 = 2;
-	optional int32 u2 = 3; //like totally always five
-	optional int32 u3 = 4; //this is like totally always 6000
+	optional int32 u2 = 3; //usually 5
+	optional int32 u3 = 4; //usually 6000
 	optional int32 u4 = 5; 
 	optional int32 u5 = 6; 
 }
@@ -54,7 +54,7 @@ message TrackResponse {
 }
 
 message MetadataResponse {
-	optional int32 u0 = 1; //no idea what this is, but the value is 1
+	optional int32 u0 = 1; //usually 1
 	optional TrackResponse response = 2;
 	optional Status state = 6;
 }
