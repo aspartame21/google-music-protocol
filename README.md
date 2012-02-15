@@ -1,4 +1,4 @@
-This project aims to document the protocol for uploading music files to Google Music. This project is related to the [MusicAlpha](https://github.com/antimatter15/musicalpha) project as well as the [Unofficial-Google-Music-API](https://github.com/simon-weber/Unofficial-Google-Music-API). Since there is no official documentation, much of the process involves guesswork, but the process is largely functional.
+This project aims to document the protocol for uploading music files to Google Music. This project is related to the [MusicAlpha](https://github.com/antimatter15/musicalpha) project. The most up to date implementation is the [Unofficial-Google-Music-API](https://github.com/simon-weber/Unofficial-Google-Music-API) - check there for more information. Since there is no official documentation, much of the process involves guesswork, but the process is largely functional.
 
 
 ##Overview
