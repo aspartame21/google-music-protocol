@@ -1,5 +1,11 @@
-This project aims to document the protocol for uploading music files to Google Music. This project is related to the [MusicAlpha](https://github.com/antimatter15/musicalpha) project. The most up to date implementation is the [Unofficial-Google-Music-API](https://github.com/simon-weber/Unofficial-Google-Music-API) - check there for more information. Since there is no official documentation, much of the process involves guesswork, but the process is largely functional.
+This repo holds and old and out-of-date specification of the Music Manager protocol used in [gmusicapi](https://github.com/simon-weber/Unofficial-Google-Music-API).
+I'll leave this information around in case it's useful to somebody, but **you probably want this instead:**
+* [up to date specs in code](https://github.com/simon-weber/Unofficial-Google-Music-API/tree/develop/gmusicapi/protocol)
+* [docs for that code](https://unofficial-google-music-api.readthedocs.org/en/latest/reference/protocol.html)
 
+The old information follows:
+
+- - -
 
 ##Overview
 
